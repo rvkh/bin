@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+#
+# pdf manager 2.1
+
+from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter
+import getopt, os, sys
+
+# merge all pdfs in pfolder
+
+def main_m(pfolder,rem):
+    try:
+        merger = PdfFileMerger()
+        for pdf in sorted(os.listdir(pfolder)):
+            if pdf.endswith('.pdf'):
+                merger.append(os.path.join(pfolder,pdf))
+        merger.write(str(os.path.realpath(pfolder))+'.pdf')
+        merger.close()
+
+    except:
+        return
+
+# split pdf into numbered files in folder filename 
+
+def main_s(pfile,rem):
+    try:
+        pdf = PdfFileReader(open(pfile, 'rb'))
+        pdr = os.path.splitext(pfile)[0]
+        if not os.path.exists(pdr):
+            os.mkdir(pdr)
+        for i in range(pdf.getNumPages()):
+            p = pdf.getPage(i)
+            pof = PdfFileWriter()
+            pof.addPage(p)
+            with open(os.path.join(pdr,'%s_%03d.pdf' % (pdr,i)), 'wb') as out:
+                pof.write(out)
+        pof.close()
+
+    except:
+        return
+
+
+def main():
+    try:
+        opt, rem = getopt.gnu_getopt(sys.argv[1:], "m:s:")
+        for c,a in opt: eval('main_'+str(c[1]))(a, rem)
+
+    except getopt.error:
+        print('invalid option')
+        sys.exit(2)
+
+
+if __name__ == "__main__":
+    main()

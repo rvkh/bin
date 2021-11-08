@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+#
+# rename manager
+# v2.1a
+
+
+function main::a {
+  rename -fA $1 *"$2"*
+}
+
+function main::c {
+  fd -td -X chmod 7${1-00}
+  fd -tf -X chmod 6${2-00}
+  ee
+  ea
+}
+
+function main::n {
+  rename -N ...0${1:-1} -X -e '$_=$N' *"$2"*
+}
+
+function main::r {
+  rename -fS $1 "$2" *"$3"*
+}
+
+function main::x {
+  fd . $1 -X rename -fczS "-" "_"
+  main::c
+}
+
+
+function main::? {
+  printf "\n$c3 rename commands$cr\n\n usage: $(basename $0)$c3 switch$cr [args$cd defaults$cr]\n
+  $c3  -a $cr add         prepend [string] to all itmes in current dir
+  $c3  -c $cr chg         recursively set attributes [folders 7${cd}00$cr] [files 6${cd}00$cr] in current dir
+  $c3  -n $cr num         rename all items in current dir starting from [number$cd 00$cr]
+  $c3  -r $cr rep         replace [string] with [string$cd null$cr] for all [matching$cd *$cr] in current dir
+  $c3  -x $cr san         recursively sanitize items in [dir$cd current$cr]\n\n"
+
+  printf "\n requires: bash_profile$cd colors$cr rename\n\n"
+}
+
+function main {
+  while getopts :a:cnr:x opt; do
+    [[ $(pwd) == ~ ]] && main::?
+    [[ $opt == : ]] && main::?
+    main::$opt "${@:2}"
+  done
+  [[ $OPTIND == 1 ]] && rn -c
+}
+
+main "${@}"

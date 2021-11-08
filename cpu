@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+#
+#
+
+import psutil, sys, time
+
+while True:
+    try:
+        a = psutil.cpu_percent(interval=0, percpu=True)
+        with open('/tmp/am_cpu', 'a') as f:
+            f.write(' '.join(str(int(item)).rjust(4,' ') for item in a) + '\n')
+        time.sleep(1)
+
+    except KeyboardInterrupt:
+        f.close()
+        sys.exit(0)

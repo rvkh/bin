@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+#
+# xls converter 2.9 beta
+
+
+import pathlib, sys, csv, xlrd, openpyxl
+
+# convert helper function from float to int
+
+def conv(val):
+    if isinstance(val,float):
+        val = int(val)
+    else:
+        val = str(val)
+    return val
+
+# csv write function
+
+def csv_write(xls, rec):
+    cv = pathlib.Path(xls).with_suffix('.csv')
+    with open(cv, 'w', encoding='utf8') as f:
+        csv.writer(f, quoting=csv.QUOTE_ALL).writerows(rec)
+    f.close()
+
+# convert unit_analysis file to csv for analysis
+
+def xls_u(xls):
+    try:
+        wb = xlrd.open_workbook(xls,formatting_info=1)
+        ws = wb.sheet_by_index(0)
+    except:
+        return
+
+    nin = ['Year','Bed','Bath','Stories','Section']
+    rec = []
+
+    for r in range(0, ws.nrows):
+        row = []
+        for c in range(1, ws.ncols):
+            head = ws.cell(0,c).value
+            val = ws.cell(r,c).value
+
+            #if str(head) == "Property Address Line 1":
+            #    row.append( str(val) )
+
+            if ws.colinfo_map[c].hidden == 0:
+                if all(x not in head for x in nin):
+                    row.append( conv(val) )
+        rec.append(row)
+    csv_write(xls,rec)
+
+# old unit analysis file converter NOT USED
+
+def xls_a(xls):
+    try:
+        wb = xlrd.open_workbook(xls,formatting_info=1)
+        ws = wb.sheet_by_index(0)
+    except:
+        return
+
+    inc = ['Parcel ID','Property Address','Legal Block','Legal Lot','Area','nit model','nit type']
+    col = []
+    ver = []
+    for c in range(1, ws.ncols):
+        h = ws.cell(0,c).value
+        v = conv(ws.cell(1,c).value)
+        if any(x in h for x in inc):
+            if len(str(v)) > 0:
+                if v not in ver:
+                    ver.append(v)
+                    col.append(c)
+
+    rec = []
+    for r in range(0, ws.nrows):
+        row = []
+        for c in col:
+            val = conv(ws.cell(r,c).value)
+            row.append(val)
+        rec.append(row)
+    csv_write(xls,rec)
+
+
+# convert building data to csv
+
+def xls_i(xls):
+    try:
+        wb = xlrd.open_workbook(xls)
+        ws = wb.sheet_by_index(0)
+    except:
+        return
+
+    rec = []
+    rec.append([ws.cell(0,20).value])
+
+    for r in range(4, 998):
+        row = []
+        if str(ws.cell(r,1).value).strip() != '':
+            for c in [1,3,6,7]:
+                val = ws.cell(r,c).value
+                row.append( conv(val) )
+        rec.append(row)
+    csv_write(xls,rec)
+
+
+# convert xlsx to csv 
+
+def xls_x(xls):
+    try:
+        wb = openpyxl.load_workbook(xls,data_only=True)
+        ws = wb['Complex']
+    except:
+        return
+
+    rec = []
+    for row in ws.iter_rows(min_row=5,values_only=True):
+        if row[0] is not None:
+            i = row[0]
+            a = str(row[1]) + " " + str(row[2]).title()
+            f = str(row[4]).zfill(2)
+            s = str(row[7]).zfill(5)
+            n = row[11]
+            u = str(n)[-2:]
+            t = (str(row[15]) + str(row[16]) + str(row[17])).replace("None","")
+            rec.append([i,a,n,u,f,None,f,s,t])
+    csv_write(xls,rec)
+
+
+# main
+
+def main(p=pathlib.Path.cwd()):
+    if len(sys.argv) > 1:
+        arg = pathlib.Path(sys.argv[1])
+        if arg.is_dir():
+            p = arg
+        else:
+            sys.exit()
+
+    for f in p.iterdir():
+        if f.suffix == ".xlsx":
+            xls_x(f)
+        if f.suffix == ".xls":
+            if "unit" in str(f):
+                xls_u(f)
+            else:
+                xls_i(f)
+
+
+if __name__ == "__main__":
+    main()

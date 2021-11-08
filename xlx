@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+#
+# xls converter 2.8 beta
+
+import getopt, pathlib, sys, csv, openpyxl
+
+# read xlsx for building import
+
+def main_r(xls,rem):
+    try:
+        wb = openpyxl.load_workbook(xls,data_only=True)
+        ax = wb['Analysis']
+        cx = wb['Building']
+    except:
+        return
+
+    rec = []
+    for row in cx.iter_rows(min_row=3, max_row=9, min_col=5, values_only=True):
+        rec.append([row[0]])
+
+    for row in ax.iter_rows(min_row=2, values_only=True):
+        i = row[0]
+        a = str(row[5]) + " " + str(row[6]).title()
+        b = row[1]
+        u = row[2]
+        f = row[3]
+        s = row[8]
+        t = row[14]
+        c = row[15]
+        rec.append([i,a,b,u,f,None,f,s,t,c])
+
+    cv = pathlib.Path(xls).with_suffix('.csv')
+    with open(cv, 'w', encoding='utf8') as f:
+        csv.writer(f, quoting=csv.QUOTE_ALL).writerows(rec)
+    f.close()
+
+
+# write exported data back to xlsx
+
+def main_w(xls,rem):
+    try:
+        wb = openpyxl.load_workbook(xls)
+    except:
+        return
+
+    kx = wb['Unitans']
+    mx = wb['Plans']
+    tx = wb['Layouts']
+
+    p = pathlib.Path(xls).parent.parent / 'ax' / 'x'
+    with open(p.joinpath('key.csv'), newline='') as f:
+        kc = csv.reader(f)
+        kd = list(kc)
+    with open(p.joinpath('meta.csv'), newline='') as f:
+        mc = csv.reader(f)
+        md = list(mc)
+    with open(p.joinpath('type.csv'), newline='') as f:
+        tc = csv.reader(f)
+        td = list(tc)
+
+    kx.delete_rows(2,amount=kx.max_row)
+    mx.delete_rows(2,amount=mx.max_row)
+    tx.delete_rows(2,amount=tx.max_row)
+
+    for row in kd:
+        kx.append(row)
+    for row in md:
+        mx.append(row)
+    for row in td:
+        tx.append(row)
+
+    wb.save(xls)
+
+
+
+def main():
+    try:
+        switch, rem = getopt.gnu_getopt(sys.argv[1:], "r:w:")
+        for com,arg in switch: eval('main_'+str(com[1]))(arg, rem)
+
+    except getopt.error:
+        print("invalid option")
+        sys.exit(2)
+
+if __name__ == "__main__":
+    main()
